@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="simple_vs">
+        attribute vec3 aPosition;
+        uniform mat4 projection;
+        uniform mat4 model;
+        void main(){
+            gl_Position = projection * model * vec4(aPosition, 1.0);
+        }
+    </string>
+
+    <string name="simple_fs">
+        precision mediump float;
+        void main(){
+            gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);
+        }
+    </string>
+
+    <string name="julia_vs">
+        #version 300 es\n
+
+        in vec3 aPosition;
+
+        uniform mat4 inv_projection;
+        uniform mat4 model;
+        uniform vec3 scale_vector;
+        uniform float zoom;
+        uniform vec2 offset;
+        out  vec2 initial_z;
+
+        void main(){
+          initial_z = (inv_projection * vec4(scale_vector, 1.0f) *(vec4(aPosition, 1.0) * zoom + vec4(offset,0.0, 1.0))).xy ;
+          gl_Position = model * vec4(aPosition, 1.0);
+        }
+    </string>
+
+    <string name="julia_fs">
+        #version 300 es\n
+
+        precision highp float;
+
+        in vec2 initial_z;
+        out vec4 FragColor;
+        uniform sampler2D tex_gradient;
+        uniform vec2 C;
+        uniform int max_iterations;
+        void main(){
+          vec2 Z = vec2(initial_z.xy);
+          int iterations = 0;
+          const float threshold_squared = 32.0;
+          while (iterations &lt; max_iterations &amp;&amp; dot(Z,Z) &lt; 32.0) {
+            vec2 Z_squared = vec2(0,0);
+            Z_squared.x = Z.x * Z.x - Z.y * Z.y;
+            Z_squared.y = 2.0 * Z.x * Z.y;
+            Z = Z_squared + C;
+            iterations++;
+          }
+          if (iterations == max_iterations)
+            FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+          else
+            FragColor = texture(tex_gradient, vec2(float(iterations) / float(max_iterations), 0.0));
+
+        }
+    </string>
+
+    <string name="mandelbrot_fs">
+        #version 300 es\n
+
+        precision lowp float;
+
+        in vec2 initial_z;
+        out vec4 FragColor;
+        uniform sampler2D tex_gradient;
+        uniform vec2 C;
+        uniform int max_iterations;
+        void main(){
+          vec2 Z = vec2(initial_z.xy);
+          int iterations = 0;
+          const float threshold_squared = 32.0;
+          while (iterations &lt; max_iterations &amp;&amp; dot(Z,Z) &lt; 32.0) {
+            vec2 Z_squared = vec2(0,0);
+            Z_squared.x = Z.x * Z.x - Z.y * Z.y;
+            Z_squared.y = 2.0 * Z.x * Z.y;
+            Z = Z_squared + initial_z;
+            iterations++;
+          }
+          if (iterations == max_iterations)
+            FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+          else
+            FragColor = texture(tex_gradient, vec2(float(iterations) / float(max_iterations), 0.0));
+
+        }
+    </string>
+</resources>
