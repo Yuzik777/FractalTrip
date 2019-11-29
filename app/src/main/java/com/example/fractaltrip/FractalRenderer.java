@@ -32,13 +32,13 @@ public class FractalRenderer implements GLSurfaceView.Renderer {
     private int mPalette;
     private Fractal mJuliaFractal = new Fractal();
     private Vector3f mJuliaPos = new Vector3f(0f, -1.0f, 0.0f);
-    private Vector3f mJuliaScale = new Vector3f(1.0f, 0.5f, 1.0f);;
+    private Vector3f mJuliaScale = new Vector3f(1.0f, 0.5f, 1.0f);
     private Shader mJuliaShader;
 
     private Shader mMandelbrotShader;
     private Fractal mMandelbrotFractal = new Fractal();
     private Vector3f mMandelbrotPos = new Vector3f(0f, 1.0f, 0.0f);
-    private Vector3f mMandelbrotScale = new Vector3f(1.0f, 0.5f, 1.0f);;
+    private Vector3f mMandelbrotScale = new Vector3f(1.0f, 0.5f, 1.0f);
 
 
     private Context mContext;
@@ -305,7 +305,7 @@ public class FractalRenderer implements GLSurfaceView.Renderer {
         float y = yScreen/height;
 
 
-        //If Mandelbrot set is visible and the pointer hit the top part of the screen, then
+        //If Mandelbrot set is visible and the pointer hits the top part of the screen, then
         //set Julia's complex parameter C to a new value, based on pointer position
         if(y<=0.5 && mOrientation.equals("portrait")) {
             Fractal mand = mMandelbrotFractal;
