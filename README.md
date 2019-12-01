@@ -5,7 +5,7 @@ But with a little bit of magic(which happens in fragment shader) they become col
 Take a trip to undiscovered infinite world of fractals and complex numbers!
 
 <img src="https://user-images.githubusercontent.com/47830605/69922583-34222100-14a6-11ea-8a8e-83371e01326f.jpg" width="250" height="500" />
-![Julia3](https://user-images.githubusercontent.com/47830605/69922546-e0173c80-14a5-11ea-905b-d05a69855f84.gif)
+<img src="https://user-images.githubusercontent.com/47830605/69922546-e0173c80-14a5-11ea-905b-d05a69855f84.gif" />
 
 
 ![Julia2](https://user-images.githubusercontent.com/47830605/69922535-b827d900-14a5-11ea-9b32-0e0a86f7dba8.gif)
