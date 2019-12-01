@@ -2,7 +2,6 @@ package com.example.fractaltrip;
 
 import android.content.Context;
 import android.opengl.GLSurfaceView;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 
@@ -96,13 +95,13 @@ public class FractalGLSurfaceView extends GLSurfaceView {
 
             case MotionEvent.ACTION_POINTER_UP: {
 
-                final int pointerIndex = e.getActionIndex();
-                final int pointerId = e.getPointerId(pointerIndex);
+                int pointerIndex = e.getActionIndex();
+                int pointerId = e.getPointerId(pointerIndex);
 
                 if (pointerId == mActivePointerId) {
                     // This was our active pointer going up. Choose a new
                     // active pointer and adjust accordingly.
-                    final int newPointerIndex = pointerIndex == 0 ? 1 : 0;
+                    int newPointerIndex = pointerIndex == 0 ? 1 : 0;
                     mLastTouchX = e.getX(newPointerIndex);
                     mLastTouchY = e.getY(newPointerIndex);
                     mActivePointerId = e.getPointerId(newPointerIndex);

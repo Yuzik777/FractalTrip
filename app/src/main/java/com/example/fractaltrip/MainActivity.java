@@ -15,6 +15,28 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        hideNavAndStatusBars();
+
+        mFractalView = new FractalGLSurfaceView(this, getString(R.string.orientation));
+
+        if(savedInstanceState!=null){
+            //Restore Julia fractal state
+            mFractalView.setJuliaFractal(Fractal.getFractalFromBundle(savedInstanceState));
+        }
+
+        setContentView(mFractalView);
+    }
+
+
+
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        //Save Julia fractal state
+        outState.putAll(Fractal.getBundleFromFractal(mFractalView.getJuliaFractal()));
+    }
+
+    private void hideNavAndStatusBars() {
         View decorView = getWindow().getDecorView();
         // Hide both the navigation bar and the status bar.
         int uiOptions = View.SYSTEM_UI_FLAG_IMMERSIVE
@@ -27,22 +49,5 @@ public class MainActivity extends AppCompatActivity {
                 | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                 | View.SYSTEM_UI_FLAG_FULLSCREEN;
         decorView.setSystemUiVisibility(uiOptions);
-
-
-        mFractalView = new FractalGLSurfaceView(this, getString(R.string.orientation));
-
-        if(savedInstanceState!=null){
-            //Restore Julia fractal state
-            mFractalView.setJuliaFractal(Fractal.getFractalFromBundle(savedInstanceState));
-        }
-
-        setContentView(mFractalView);
-    }
-
-    @Override
-    protected void onSaveInstanceState(@NonNull Bundle outState) {
-        super.onSaveInstanceState(outState);
-        //Save Julia fractal state
-        outState.putAll(Fractal.getBundleFromFractal(mFractalView.getJuliaFractal()));
     }
 }
