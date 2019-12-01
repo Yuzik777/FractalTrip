@@ -17,35 +17,54 @@ import OpenGLHelper.Shader;
 
 public class FractalRenderer implements GLSurfaceView.Renderer {
 
-    private int width;
-    private int height;
+    /**
+     * SurfaceView width
+     */
+    private int mWidth;
+    /**
+     * SurfaceView height
+     */
+    private int mHeight;
+    /**
+     * Screen orientation
+     */
     private String mOrientation;
 
+    /**
+     * Vertex Array Object for a square, format - (Xp,Yp,Zp)
+     */
     private int mVAOSquare;
+    /**
+     * Vertex Buffer Object for a square
+     */
     private int mVBOSquare;
-    private FloatBuffer fb = FloatBuffer.allocate(16);
-    private Matrix4f mProjection;
-    private Matrix4f mInvProjection;
-
-    private Vector3f mProjVector;
-
+    /**
+     * 1D texture for fragment shader
+     */
     private int mPalette;
-    private Fractal mJuliaFractal = new Fractal();
-    private Vector3f mJuliaPos = new Vector3f(0f, -1.0f, 0.0f);
-    private Vector3f mJuliaScale = new Vector3f(1.0f, 0.5f, 1.0f);
-    private Shader mJuliaShader;
 
     private Shader mMandelbrotShader;
-    private Fractal mMandelbrotFractal = new Fractal();
-    private Vector3f mMandelbrotPos = new Vector3f(0f, 1.0f, 0.0f);
-    private Vector3f mMandelbrotScale = new Vector3f(1.0f, 0.5f, 1.0f);
+    private Shader mJuliaShader;
+    /**
+     * Empty float buffer for matrix-vector calculations
+     */
+    private FloatBuffer fb = FloatBuffer.allocate(16);
 
+    private FractalDrawer mJuliaDrawer;
+    private FractalDrawer mMandelbrotDrawer;
 
+    private Fractal mJuliaFractal;
+    private Fractal mMandelbrotFractal;
+
+    /**
+     * Application context
+     */
     private Context mContext;
 
-    private void createPalette(){
+    private void createPalette() {
         //Palette for fragment shader(1D texture in other words)
         //Format is R1,G1,B1,R2,G2,B2...
+        //Don't be scared, just scroll down. It will end in 96 rows)
         int[] palette =
                 {
                         0x6F, 0x00, 0x00, 0xFF, 0x0E, 0x03, 0xFF, 0x1C,
@@ -145,10 +164,13 @@ public class FractalRenderer implements GLSurfaceView.Renderer {
                         0x00, 0xD8, 0x30, 0x00, 0xE2, 0x27, 0x00, 0xEC,
                         0x1D, 0x00, 0xF6, 0x13, 0x00, 0xFF, 0x09, 0x00,
                 };
+        //Told you! Not so much of scrolling!
+        //These odd-looking hex values will be transformed to beautiful colors in a while.
+
         //Packing out palette to ByteBuffer
         ByteBuffer buf = ByteBuffer.allocate(palette.length);
-        for(int color : palette){
-            buf.put((byte)color);
+        for (int color : palette) {
+            buf.put((byte) color);
         }
         buf.position(0);
 
@@ -165,104 +187,105 @@ public class FractalRenderer implements GLSurfaceView.Renderer {
         GLES30.glGenerateMipmap(GLES30.GL_TEXTURE_2D);
     }
 
-    public FractalRenderer(Context context, String orientation){
+    public FractalRenderer(Context context, String orientation) {
         super();
         mContext = context;
-        mInvProjection = new Matrix4f();
         mOrientation = orientation;
-        if(mOrientation.equals("landscape")){
-            mJuliaPos = new Vector3f(0.0f, 0.0f, 0.0f);
-            mJuliaScale = new Vector3f(1.0f);
+
+        mJuliaDrawer = new FractalDrawer();
+        mJuliaFractal = new Fractal();
+        mJuliaDrawer.setFractal(mJuliaFractal);
+
+        if (mOrientation.equals("portrait")) {
+            mMandelbrotDrawer = new FractalDrawer();
+            mMandelbrotFractal = new Fractal();
+            mMandelbrotFractal.maxIterations = 128;
+            mMandelbrotDrawer.setFractal(mMandelbrotFractal);
         }
     }
 
     @Override
     public void onSurfaceCreated(GL10 gl10, EGLConfig eglConfig) {
-
+        //Compile and link shaders
         mJuliaShader = new Shader(mContext.getString(R.string.julia_vs),
                 mContext.getString(R.string.julia_fs));
-        mMandelbrotShader = new Shader(mContext.getString(R.string.julia_vs),
-                mContext.getString(R.string.mandelbrot_fs));
+
         createPalette();
         makeSquareVAO();
-        GLES30.glClearColor(1.0f, 0.0f, 0.5f, 1.0f);
 
+        //Set parameters for Julia fractal drawer
+        mJuliaDrawer.setShader(mJuliaShader);
+        mJuliaDrawer.setVAO(mVAOSquare);
+
+        if (mOrientation.equals("landscape")) {
+            mJuliaDrawer.setPosition(new Vector3f(0.0f, 0.0f, 0.0f));
+            mJuliaDrawer.setScale(new Vector3f(1.0f));
+        } else {
+            mJuliaDrawer.setPosition(new Vector3f(0f, -1.0f, 0.0f));
+            mJuliaDrawer.setScale(new Vector3f(1.0f, 0.5f, 1.0f));
+
+            //Set parameters for Mandelbrot fractal drawer
+            mMandelbrotShader = new Shader(mContext.getString(R.string.julia_vs),
+                    mContext.getString(R.string.mandelbrot_fs));
+            mMandelbrotDrawer.setShader(mMandelbrotShader);
+            mMandelbrotDrawer.setVAO(mVAOSquare);
+            mMandelbrotDrawer.setPosition(new Vector3f(0f, 1.0f, 0.0f));
+            mMandelbrotDrawer.setScale(new Vector3f(1.0f, 0.5f, 1.0f));
+
+        }
+
+        GLES30.glClearColor(1.0f, 0.0f, 0.5f, 1.0f);
     }
 
     @Override
     public void onSurfaceChanged(GL10 gl10, int width, int height) {
-        this.width = width;
-        this.height = height;
+        this.mWidth = width;
+        this.mHeight = height;
         //Calculate width-height ratio and generate orthonormal projection matrix
         float fAspect;
-        fAspect = 1.0f*width/height;
+        fAspect = 1.0f * width / height;
         float unit = 1.0f;
-        if(fAspect<=1) {
-            mProjection = new Matrix4f().ortho(-unit, unit,
-                    -unit/fAspect, unit/fAspect , -unit, unit);
-        }else {
-            mProjection = new Matrix4f().ortho(-unit*fAspect, unit*fAspect,
+        Matrix4f projection;
+        if (fAspect <= 1) {
+            projection = new Matrix4f().ortho(-unit, unit,
+                    -unit / fAspect, unit / fAspect, -unit, unit);
+        } else {
+            projection = new Matrix4f().ortho(-unit * fAspect, unit * fAspect,
                     -unit, unit, -unit, unit);
         }
-        mInvProjection = mProjection.invert(mInvProjection);
+
+        Matrix4f invProjection = projection.invert(new Matrix4f());
+
+        mJuliaDrawer.setInvProjection(invProjection);
+        if(mOrientation.equals("portrait"))
+            mMandelbrotDrawer.setInvProjection(invProjection);
 
         GLES30.glViewport(0, 0, width, height);
     }
 
     @Override
     public void onDrawFrame(GL10 gl10) {
-
-
-        GLES30.glClear(GLES30.GL_COLOR_BUFFER_BIT);
         //If orientation is landscape - then only Julia set is drawn(full size)
         //If portrait - both Mandelbrot(top) and Julia(bottom) sets are drawn
-        mJuliaShader.use();
-        //Calculate model matrix for fractal(scaling and translation)
-        Matrix4f model = new Matrix4f()
-                .scale(mJuliaScale)
-                .translate(mJuliaPos);
 
-        //Passing all uniforms to shader program
-        mJuliaShader.setMat4("model", model.get(fb));
-        mJuliaShader.setVec3("scale_vector", mJuliaScale.x, mJuliaScale.y, mJuliaScale.z);
-        mJuliaShader.setMat4("inv_projection", mInvProjection.get(fb));
-        mJuliaShader.setFloat("zoom", mJuliaFractal.zoom);
-        mJuliaShader.setVec2("offset", mJuliaFractal.xOffset, mJuliaFractal.yOffset);
-        mJuliaShader.setVec2("C", mJuliaFractal.C);
-        mJuliaShader.setInt("max_iterations", mJuliaFractal.maxIterations);
+        GLES30.glClear(GLES30.GL_COLOR_BUFFER_BIT);
 
-        //Bind rectangle shape and draw the fractal
-        GLES30.glBindVertexArray(mVAOSquare);
-        GLES30.glDrawArrays(GLES30.GL_TRIANGLES, 0, 6);
+        mJuliaDrawer.draw();
 
-        if(mOrientation.equals("landscape")) return;
-        mMandelbrotShader.use();
-        model = new Matrix4f()
-                .scale(mMandelbrotScale)
-                .translate(mMandelbrotPos);
-
-        mMandelbrotShader.setMat4("model", model.get(fb));
-        mMandelbrotShader.setVec3("scale_vector", mMandelbrotScale.x, mMandelbrotScale.y, mMandelbrotScale.z);
-        mMandelbrotShader.setMat4("inv_projection", mInvProjection.get(fb));
-        mMandelbrotShader.setFloat("zoom", mMandelbrotFractal.zoom);
-        mMandelbrotShader.setVec2("offset", mMandelbrotFractal.xOffset, mMandelbrotFractal.yOffset);
-        mMandelbrotShader.setVec2("C", mMandelbrotFractal.C);
-        mMandelbrotShader.setInt("max_iterations", mMandelbrotFractal.maxIterations);
-
-        GLES30.glDrawArrays(GLES30.GL_TRIANGLES, 0, 6);
-
-        GLES30.glBindVertexArray(0);
+        if(mOrientation.equals("portrait"))
+            mMandelbrotDrawer.draw();
     }
 
-    public void setJuliaFractal(Fractal fractal){
+    public void setJuliaFractal(Fractal fractal) {
         mJuliaFractal = fractal;
+        mJuliaDrawer.setFractal(mJuliaFractal);
     }
 
-    public Fractal getJuliaFractal(){
+    public Fractal getJuliaFractal() {
         return mJuliaFractal;
     }
 
-    private void makeSquareVAO(){
+    private void makeSquareVAO() {
         float[] squarePoints = {
                 -1.0f, 1.0f, 0.0f,
                 -1.0f, -1.0f, 0.0f,
@@ -285,50 +308,54 @@ public class FractalRenderer implements GLSurfaceView.Renderer {
         GLES30.glGenBuffers(1, tmp, 0);
         mVBOSquare = tmp[0];
         GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, mVBOSquare);
-        GLES30.glBufferData(GLES30.GL_ARRAY_BUFFER, squarePoints.length*4, fb, GLES30.GL_STATIC_DRAW);
+        GLES30.glBufferData(GLES30.GL_ARRAY_BUFFER, squarePoints.length * 4, fb, GLES30.GL_STATIC_DRAW);
 
         GLES30.glBindVertexArray(mVAOSquare);
 
         //position attribute
-        GLES30.glVertexAttribPointer(0, 3, GLES30.GL_FLOAT, false, 3*4,0);
+        GLES30.glVertexAttribPointer(0, 3, GLES30.GL_FLOAT, false, 3 * 4, 0);
         GLES30.glEnableVertexAttribArray(0);
 
         GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, 0);
         GLES30.glBindVertexArray(0);
-
-
     }
+
 
     public void onActionMove(float xScreen, float yScreen) {
 
-        float x = xScreen/width;
-        float y = yScreen/height;
-
+        float x = xScreen / mWidth;
+        float y = yScreen / mHeight;
 
         //If Mandelbrot set is visible and the pointer hits the top part of the screen, then
         //set Julia's complex parameter C to a new value, based on pointer position
-        if(y<=0.5 && mOrientation.equals("portrait")) {
-            Fractal mand = mMandelbrotFractal;
 
-            Matrix3f m = mInvProjection.get3x3(new Matrix3f());
-            mJuliaFractal.C[1] = new Vector3f(1.0f, -1 * mand.zoom + mand.yOffset + mand.zoom * y * 2 * 2, 1.0f).mul(mMandelbrotScale).mul(m).y;
-            mJuliaFractal.C[0] = new Vector3f(-1 * mand.zoom + mand.xOffset + mand.zoom * x * 2, 1.0f, 1.0f).mul(mMandelbrotScale).mul(m).x;
-        }
+        if (y > 0.5 || mOrientation.equals("landscape")) return;
 
+        Fractal mand = mMandelbrotFractal;
+
+        Matrix3f m = mMandelbrotDrawer.getInvProjection().get3x3(new Matrix3f());
+        mJuliaFractal.C[0] =
+                new Vector3f(-1 * mand.zoom + mand.xOffset + mand.zoom * x * 2, 1.0f, 1.0f)
+                        .mul(mMandelbrotDrawer.getScale())
+                        .mul(m).x;
+        mJuliaFractal.C[1] =
+                new Vector3f(1.0f, -1 * mand.zoom + mand.yOffset + mand.zoom * y * 2 * 2, 1.0f)
+                        .mul(mMandelbrotDrawer.getScale())
+                        .mul(m).y;
     }
 
     public void onZoom(float scaleFactor, float focusX, float focusY) {
         //Zoom in or out Julia fractal
-        if(focusY/height>0.5 || mOrientation.equals("landscape"))
-            mJuliaFractal.zoom*=scaleFactor;
+        if (focusY / mHeight > 0.5 || mOrientation.equals("landscape"))
+            mJuliaFractal.zoom *= scaleFactor;
     }
 
     public void onActionDrag(float x, float y, float dx, float dy) {
-        //Change Julia's offsets when drag occurs
-        if(y/height<0.5 && mOrientation.equals("portrait")) return;
-        mJuliaFractal.xOffset-=dx/width*mJuliaFractal.zoom;
-        mJuliaFractal.yOffset+=dy/height*mJuliaFractal.zoom/mJuliaScale.y;//TODO
+        //Change Julia's offset when drag occurs
+        if (y / mHeight > 0.5 || mOrientation.equals("landscape")) {
+            mJuliaFractal.xOffset -= dx / mWidth * mJuliaFractal.zoom;
+            mJuliaFractal.yOffset += dy / mHeight * mJuliaFractal.zoom / mJuliaDrawer.getScale().y;//TODO
+        }
     }
-
 
 }
