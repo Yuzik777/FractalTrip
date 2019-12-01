@@ -13,6 +13,6 @@ any area of Mandelbrot set, Julia set will immediately change.
 # Installation 
 Just clone the project and build it via Android Studio.
 
-#Pro tip
+# Pro tip
 Most interesting variations of Julia set happen, when you touch Mandelbrot set on the periphery of the black zone(cardiod).
 Feel free to experiment and enjoy your trip to Fractal World!
